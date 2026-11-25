@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VayuGuard AI — Pan-India Air Quality & Smog Mitigation Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold text-xl shadow-lg shadow-emerald-500/20">
+          V
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg tracking-tight text-white">VayuGuard AI</h1>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              PAN-INDIA LIVE
+            </span>
+          </div>
+          <p id="ui-subtitle" class="text-xs text-slate-400">Deterministic CPCB NAQI & Smog Mitigation Co-Pilot</p>
+        </div>
+      </div>
+
+      <!-- Language & Voice Controls -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <select id="language-select" aria-label="Select Language" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500">
+          <option value="en">English</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="kn">ಕನ್ನಡ (Kannada)</option>
+          <option value="ta">தமிழ் (Tamil)</option>
+          <option value="mr">मराठी (Marathi)</option>
+        </select>
+
+        <button id="btn-voice-read" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs sm:text-sm font-medium text-emerald-300 transition">
+          <span>🔊</span>
+          <span id="ui-read-aloud">Read Report</span>
+        </button>
+
+        <button id="btn-voice-ask" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs sm:text-sm font-semibold transition shadow-md shadow-emerald-500/20">
+          <span>🎙️</span>
+          <span id="ui-voice-ask">Ask by Voice</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Pan-India Universal Location Search & Live GPS Bar -->
+    <section class="glass-card rounded-2xl p-4 sm:p-5 border border-slate-800 relative z-30">
+      <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
+        <div class="relative flex-1">
+          <div class="flex items-center bg-slate-900 border border-slate-700 focus-within:border-emerald-400 rounded-xl px-3.5 py-2.5">
+            <span class="text-slate-400 mr-2.5">🔍</span>
+            <input
+              id="location-search-input"
+              type="text"
+              autocomplete="off"
+              placeholder="Search ANY Indian village, gram panchayat, town, city, or 6-digit PIN (e.g., 560038, Alibag, Kumbakonam)..."
+              class="w-full bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none"
+            />
+            <span id="search-spinner" class="hidden text-xs text-emerald-400 animate-pulse ml-2">Searching...</span>
+          </div>
+
+          <!-- Autocomplete Dropdown -->
+          <div id="search-results-dropdown" class="hidden absolute left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-80 overflow-y-auto divide-y divide-slate-800 z-50"></div>
+        </div>
+
+        <div class="flex flex-wrap sm:flex-nowrap gap-2">
+          <button id="btn-live-gps" type="button" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 text-sm font-semibold transition">
+            <span>📍</span>
+            <span id="ui-live-gps">Use Live Location</span>
+          </button>
+
+          <select id="preset-station-select" aria-label="Quick Reference Stations" class="flex-1 sm:flex-initial bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500">
+            <option value="">Quick Reference Hubs...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Active Location & Data Source Pill -->
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+        <div class="flex items-center gap-2">
+          <span id="status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="active-location-label" class="font-semibold text-slate-200">Bengaluru — Silk Board Junction, Karnataka</span>
+          <span id="active-location-coords" class="text-slate-500">(12.9177°N, 77.6238°E)</span>
+        </div>
+        <div id="data-source-badge" class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300">
+          Source: Reference Station Telemetry • CPCB NAQI Standard
+        </div>
+      </div>
+    </section>
+
+    <!-- Primary AQI Hero & Pollutant Grid -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Left: CPCB NAQI Score Card -->
+      <div id="aqi-hero-card" class="lg:col-span-5 glass-card rounded-2xl p-6 border border-slate-800 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <span id="ui-aqi-title" class="text-xs font-semibold uppercase tracking-wider text-slate-400">CPCB National Air Quality Index</span>
+            <span id="aqi-category-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              Moderately Polluted
+            </span>
+          </div>
+
+          <div class="mt-4 flex items-baseline gap-4">
+            <div id="aqi-score-value" class="text-6xl sm:text-7xl font-extrabold tracking-tight text-amber-400">168</div>
+            <div class="space-y-1">
+              <div class="text-xs text-slate-400">Dominant Pollutant</div>
+              <div id="dominant-pollutant-label" class="text-base font-bold text-white">PM2.5</div>
+              <div id="cigarette-equiv-label" class="text-xs text-rose-300 font-medium">≈ 3.7 cigarettes / day passive intake</div>
+            </div>
+          </div>
+
+          <p id="aqi-plain-explanation" class="mt-4 text-sm text-slate-300 leading-relaxed">
+            Breathing discomfort likely for people with asthma, lung conditions, children, and older adults during prolonged outdoor exertion.
+          </p>
+        </div>
+
+        <!-- Interactive What-If Simulator Slider -->
+        <div class="mt-6 pt-4 border-t border-slate-800">
+          <div class="flex justify-between text-xs mb-1.5">
+            <span class="text-slate-400 font-medium">Simulate PM2.5 Concentration (µg/m³)</span>
+            <span id="slider-pm25-val" class="font-bold text-emerald-400">80 µg/m³</span>
+          </div>
+          <input id="pm25-simulator-slider" type="range" min="5" max="450" value="80" class="w-full accent-emerald-400 cursor-pointer" />
+          <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+            <span>Good (15)</span>
+            <span>Moderate (75)</span>
+            <span>Poor (150)</span>
+            <span>Severe (300+)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: 6 Pollutant Breakdown + Demographic Advisories -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div class="glass-card rounded-xl p-4 border border-slate-800">
+            <div class="text-xs text-slate-400">PM2.5 (Fine)</div>
+            <div id="metric-pm25" class="text-2xl font-bold text-white mt-1">80 <span class="text-xs font-normal text-slate-400">µg/m³</span></div>
+            <div id="subindex-pm25" class="text-[11px] text-amber-400 mt-1">Sub-Index: 168</div>
+          </div>
+          <div class="glass-card rounded-xl p-4 border border-slate-800">
+            <div class="text-xs text-slate-400">PM10 (Coarse)</div>
+            <div id="metric-pm10" class="text-2xl font-bold text-white mt-1">142 <span class="text-xs font-normal text-slate-400">µg/m³</span></div>
+            <div id="subindex-pm10" class="text-[11px] text-slate-400 mt-1">Sub-Index: 128</div>
+          </div>
+          <div class="glass-card rounded-xl p-4 border border-slate-800">
+            <div class="text-xs text-slate-400">NO₂ (Traffic)</div>
+            <div id="metric-no2" class="text-2xl font-bold text-white mt-1">48 <span class="text-xs font-normal text-slate-400">µg/m³</span></div>
+            <div class="text-[11px] text-slate-400 mt-1">CPCB Safe: ≤80</div>
+          </div>
+          <div class="glass-card rounded-xl p-4 border border-slate-800">
+            <div class="text-xs text-slate-400">O₃ (Ozone)</div>
+            <div id="metric-o3" class="text-2xl font-bold text-white mt-1">36 <span class="text-xs font-normal text-slate-400">µg/m³</span></div>
+            <div class="text-[11px] text-slate-400 mt-1">CPCB Safe: ≤100</div>
+          </div>
+          <div class="glass-card rounded-xl p-4 border border-slate-800">
+            <div class="text-xs text-slate-400">SO₂ (Industrial)</div>
+            <div id="metric-so2" class="text-2xl font-bold text-white mt-1">14 <span class="text-xs font-normal text-slate-400">µg/m³</span></div>
+            <div class="text-[11px] text-slate-400 mt-1">CPCB Safe: ≤80</div>
+          </div>
+          <div class="glass-card rounded-xl p-4 border border-slate-800">
+            <div class="text-xs text-slate-400">CO (Combustion)</div>
+            <div id="metric-co" class="text-2xl font-bold text-white mt-1">1.1 <span class="text-xs font-normal text-slate-400">mg/m³</span></div>
+            <div class="text-[11px] text-slate-400 mt-1">CPCB Safe: ≤2.0</div>
+          </div>
+        </div>
+
+        <!-- Localized Demographic Risk Cards -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800">
+          <h2 id="ui-demo-heading" class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-3">
+            Personalized Vulnerability Guidance
+          </h2>
+          <div id="demographic-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 24-Hour Ventilation Window & Commute Mask Advisor -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- 24-Hour Diurnal Ventilation Chart -->
+      <div class="lg:col-span-7 glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 id="ui-vent-heading" class="text-base font-bold text-white">24-Hour Smart Ventilation & Home Air Plan</h2>
+              <p class="text-xs text-slate-400">Tracks morning/evening inversion trapping vs. afternoon dispersion</p>
+            </div>
+            <span id="best-window-badge" class="px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+              Best Window: 1:00 PM – 4:00 PM
+            </span>
+          </div>
+          <div class="h-60 w-full">
+            <canvas id="ventilation-chart"></canvas>
+          </div>
+        </div>
+
+        <div id="home-action-checklist" class="mt-4 pt-4 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs"></div>
+      </div>
+
+      <!-- Commute & Mask Filtration Dose Calculator -->
+      <div class="lg:col-span-5 glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+        <div>
+          <h2 id="ui-commute-heading" class="text-base font-bold text-white">Commute & Mask Dose Calculator</h2>
+          <p class="text-xs text-slate-400 mb-4">Deterministic pulmonary PM2.5 intake model</p>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="block text-slate-300 font-medium mb-1">Trip Duration (Minutes)</label>
+              <input id="commute-minutes" type="number" min="5" max="480" value="45" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400" />
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-medium mb-1">Activity Breathing Rate</label>
+              <select id="commute-activity" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400">
+                <option value="0.54">Seated / Car / Metro (0.54 m³/hr)</option>
+                <option value="1.20" selected>Brisk Walking / Two-Wheeler (1.20 m³/hr)</option>
+                <option value="2.40">Outdoor Running / Heavy Labor (2.40 m³/hr)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-slate-300 font-medium mb-1">Mask Protection Grade</label>
+              <select id="commute-mask" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-400">
+                <option value="0">No Mask (0% Filtration)</option>
+                <option value="0.25">Cloth / Scarf (~25% Filtration)</option>
+                <option value="0.60">Surgical 3-Ply (~60% Filtration)</option>
+                <option value="0.92" selected>Well-Fitted N95 / FFP2 (~92% Filtration)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-400">Unmasked PM2.5 Exposure:</span>
+            <span id="dose-unmasked" class="text-sm font-bold text-rose-400">72.0 µg</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-400">Protected Inhaled Dose:</span>
+            <span id="dose-protected" class="text-base font-extrabold text-emerald-400">5.8 µg</span>
+          </div>
+          <p id="mask-recommendation-note" class="text-[11px] text-slate-300 pt-1 border-t border-slate-800">
+            N95/FFP2 respirator strongly recommended for two-wheeler or outdoor commutes at this AQI.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gemini AI Natural-Language Health Co-Pilot -->
+    <section class="glass-card rounded-2xl p-5 border border-slate-800">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <span>✨</span>
+            <span id="ui-ai-heading">VayuGuard AI Health & Family Action Co-Pilot</span>
+          </h2>
+          <p class="text-xs text-slate-400">Translates exact CPCB numbers into personalized local advice (optional Gemini API key supported)</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input
+            id="gemini-api-key"
+            type="password"
+            placeholder="Optional Gemini API Key (AIza...)"
+            class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-400"
+          />
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input
+          id="ai-question-input"
+          type="text"
+          placeholder="Ask e.g., 'Is it safe for my 6-year-old asthmatic child to play outside at 5 PM?' or 'Should I run an air purifier tonight?'"
+          class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400"
+        />
+        <button id="btn-ask-ai" type="button" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-sm transition">
+          Get Action Plan
+        </button>
+      </div>
+
+      <div id="ai-response-box" class="mt-4 p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-sm text-slate-200 leading-relaxed">
+        Select any village or city in India above, or ask a question about school runs, outdoor exercise, asthma precautions, or indoor air purification.
+      </div>
+    </section>
+  </main>
+
+  <!-- Load modular JavaScript files in dependency order -->
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
